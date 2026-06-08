@@ -92,7 +92,7 @@ export const Route = createFileRoute("/api/chat")({
           model: gateway("google/gemini-3-flash-preview"),
           system:
             "You are ThermoBot, a warm family-friendly assistant who helps people brew and enjoy what's in their thermos. Give friendly, concise advice about ideal serving temperatures for tea (green, black, herbal, oolong, matcha), coffee, hot chocolate, soup, and infused water. Remind users when it's a good time to drink based on cooling. Use simple language and short paragraphs.",
-          messages: convertToModelMessages(messages),
+          messages: await convertToModelMessages(messages),
         });
 
         return result.toUIMessageStreamResponse({

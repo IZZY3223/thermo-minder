@@ -52,12 +52,12 @@ export const renameThread = createServerFn({ method: "POST" })
 export const loadThreadMessages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ threadId: z.string().uuid() }).parse(d))
-  .handler(async ({ data, context }): Promise<UIMessage[]> => {
+  .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("chat_messages")
       .select("content")
       .eq("thread_id", data.threadId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((r) => r.content as UIMessage);
+    return (rows ?? []).map((r) => r.content as unknown as UIMessage);
   });
