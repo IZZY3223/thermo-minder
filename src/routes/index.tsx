@@ -157,7 +157,7 @@ function Index() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
       <Toaster theme="dark" position="top-right" richColors />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <header className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-teal-400">
               <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-teal-400" />
@@ -170,6 +170,11 @@ function Index() {
               Newton's Law of Cooling, in real time. Get pinged when your {contents.toLowerCase()} hits the sweet spot.
             </p>
           </div>
+          <nav className="flex gap-2 text-sm">
+            <Link to="/records" className="rounded-lg border border-slate-700 px-3 py-1.5 text-slate-200 hover:border-teal-400 hover:text-teal-300">Records</Link>
+            <Link to="/chat" className="rounded-lg border border-slate-700 px-3 py-1.5 text-slate-200 hover:border-teal-400 hover:text-teal-300">Chat</Link>
+            <Link to="/auth" className="rounded-lg bg-teal-500 px-3 py-1.5 font-semibold text-slate-950 hover:bg-teal-400">Sign in</Link>
+          </nav>
         </header>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
