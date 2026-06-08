@@ -23,8 +23,14 @@ function RecordsPage() {
   });
 
   const createMut = useMutation({
-    mutationFn: (input: Parameters<typeof createRecord>[0]["data"]) =>
-      fetchCreate({ data: input }),
+    mutationFn: (input: {
+      contents: string;
+      initial_temp: number | null;
+      room_temp: number | null;
+      volume_ml: number | null;
+      efficiency: number | null;
+      notes: string | null;
+    }) => fetchCreate({ data: input }),
     onSuccess: () => {
       toast.success("Record saved");
       qc.invalidateQueries({ queryKey: ["records"] });
