@@ -1,13 +1,23 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const navigate = useNavigate();
+  const router = useRouter();
 
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
+  }
+
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.history.back();
+    } else {
+      navigate({ to: "/" });
+    }
   }
 
   return (
@@ -15,6 +25,13 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
       <header className="border-b border-slate-800/80 bg-slate-950/40 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-6">
+            <button
+              onClick={goBack}
+              aria-label="Go back"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 text-slate-300 hover:border-teal-400 hover:text-teal-300"
+            >
+              <ArrowLeft size={16} />
+            </button>
             <Link to="/" className="flex items-center gap-2 text-teal-400">
               <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-teal-400" />
               <span className="text-xs font-semibold uppercase tracking-widest">ThermoTracker</span>
