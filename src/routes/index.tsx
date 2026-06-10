@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import { toast, Toaster } from "sonner";
-import { Thermometer, Activity, MessageCircle, Send, Play, RotateCcw, FastForward } from "lucide-react";
+import { Thermometer, Activity, MessageCircle, Send, Play, RotateCcw, FastForward, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   ssr: false,
