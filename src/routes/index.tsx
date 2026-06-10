@@ -35,11 +35,25 @@ export const Route = createFileRoute("/")({
 
 type Tab = "reminder" | "tracker" | "chat";
 
+function loadJSON<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const v = localStorage.getItem(key);
+    return v ? (JSON.parse(v) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function App() {
-  const [tab, setTab] = useState<Tab>("reminder");
+  const [tab, setTab] = useState<Tab>(() => loadJSON<Tab>("tt:tab", "reminder"));
   const [unread, setUnread] = useState(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => loadMessages());
   const [myName, setMyName] = useState<string>(() => (typeof window !== "undefined" ? localStorage.getItem("tt:name") || "Me" : "Me"));
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("tt:tab", JSON.stringify(tab));
+  }, [tab]);
 
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("tt:messages", JSON.stringify(chatMessages));
