@@ -158,15 +158,27 @@ function ReminderScreen({
   myName: string;
   postMessage: (m: Omit<ChatMessage, "id" | "time">) => void;
 }) {
-  const [drink, setDrink] = useState("Morning tea");
-  const [startTemp, setStartTemp] = useState(80);
-  const [targetTemp, setTargetTemp] = useState(60);
-  const [ratePerDeg, setRatePerDeg] = useState(3);
-  const [running, setRunning] = useState(false);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const saved = loadJSON<Partial<{
+    drink: string; startTemp: number; targetTemp: number; ratePerDeg: number;
+    running: boolean; startedAt: number | null; logs: AlertLog[];
+    fired: { pre: boolean; ready: boolean; late: boolean };
+  }>>("tt:reminder", {});
+  const [drink, setDrink] = useState(saved.drink ?? "Morning tea");
+  const [startTemp, setStartTemp] = useState(saved.startTemp ?? 80);
+  const [targetTemp, setTargetTemp] = useState(saved.targetTemp ?? 60);
+  const [ratePerDeg, setRatePerDeg] = useState(saved.ratePerDeg ?? 3);
+  const [running, setRunning] = useState(saved.running ?? false);
+  const [startedAt, setStartedAt] = useState<number | null>(saved.startedAt ?? null);
   const [now, setNow] = useState(Date.now());
-  const [logs, setLogs] = useState<AlertLog[]>([]);
-  const firedRef = useRef<{ pre: boolean; ready: boolean; late: boolean }>({ pre: false, ready: false, late: false });
+  const [logs, setLogs] = useState<AlertLog[]>(saved.logs ?? []);
+  const firedRef = useRef<{ pre: boolean; ready: boolean; late: boolean }>(saved.fired ?? { pre: false, ready: false, late: false });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("tt:reminder", JSON.stringify({
+      drink, startTemp, targetTemp, ratePerDeg, running, startedAt, logs, fired: firedRef.current,
+    }));
+  }, [drink, startTemp, targetTemp, ratePerDeg, running, startedAt, logs]);
 
   const totalSeconds = Math.max(0, (startTemp - targetTemp) * ratePerDeg * 60);
 
@@ -311,13 +323,31 @@ function ReminderScreen({
 /* ================= TRACKER SCREEN ================= */
 
 function TrackerScreen() {
-  const [efficiency, setEfficiency] = useState(70);
-  const [initial, setInitial] = useState(90);
-  const [room, setRoom] = useState(25);
-  const [volume, setVolume] = useState(300);
-  const [elapsed, setElapsed] = useState(0); // simulated minutes
-  const [running, setRunning] = useState(false);
-  const firedRef = useRef<Record<string, boolean>>({});
+  const saved = loadJSON<Partial<{
+    efficiency: number; initial: number; room: number; volume: number;
+    elapsed: number; running: boolean; lastTick: number | null;
+    fired: Record<string, boolean>;
+  }>>("tt:tracker", {});
+  // If running when we left, advance elapsed by real seconds elapsed since lastTick
+  const seedElapsed =
+    saved.running && saved.lastTick
+      ? (saved.elapsed ?? 0) + Math.floor((Date.now() - saved.lastTick) / 1000)
+      : saved.elapsed ?? 0;
+  const [efficiency, setEfficiency] = useState(saved.efficiency ?? 70);
+  const [initial, setInitial] = useState(saved.initial ?? 90);
+  const [room, setRoom] = useState(saved.room ?? 25);
+  const [volume, setVolume] = useState(saved.volume ?? 300);
+  const [elapsed, setElapsed] = useState(seedElapsed);
+  const [running, setRunning] = useState(saved.running ?? false);
+  const firedRef = useRef<Record<string, boolean>>(saved.fired ?? {});
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("tt:tracker", JSON.stringify({
+      efficiency, initial, room, volume, elapsed, running,
+      lastTick: running ? Date.now() : null, fired: firedRef.current,
+    }));
+  }, [efficiency, initial, room, volume, elapsed, running]);
 
   const k = (1 - efficiency / 100) * 0.005 * (300 / Math.max(volume, 50));
   const temp = (t: number) => room + (initial - room) * Math.exp(-k * t);
