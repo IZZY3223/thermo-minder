@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LineChart,
   Line,
@@ -14,6 +16,11 @@ import { toast, Toaster } from "sonner";
 import { Thermometer, Activity, MessageCircle, Send, Play, RotateCcw, FastForward } from "lucide-react";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw redirect({ to: "/auth" });
+  },
   head: () => ({
     meta: [
       { title: "ThermoTracker 2.0 — Smart Thermos Companion" },
