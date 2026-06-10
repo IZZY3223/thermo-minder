@@ -46,6 +46,7 @@ function loadJSON<T>(key: string, fallback: T): T {
 }
 
 function App() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>(() => loadJSON<Tab>("tt:tab", "reminder"));
   const [unread, setUnread] = useState(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => loadMessages());
@@ -74,11 +75,24 @@ function App() {
     if (t === "chat") setUnread(0);
   }
 
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.history.back();
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
       <Toaster theme="dark" position="top-center" richColors />
       <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-slate-950 pb-20">
-        <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 px-5 py-3 backdrop-blur">
+        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-800 bg-slate-950/90 px-5 py-3 backdrop-blur">
+          <button
+            onClick={goBack}
+            aria-label="Go back"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 text-slate-300 hover:border-teal-400 hover:text-teal-300"
+          >
+            <ArrowLeft size={16} />
+          </button>
           <h1 className="text-base font-semibold tracking-tight">
             <span className="text-teal-400">Thermo</span>Tracker <span className="text-xs font-normal text-slate-500">2.0</span>
           </h1>
