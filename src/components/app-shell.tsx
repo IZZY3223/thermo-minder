@@ -22,6 +22,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
             <nav className="hidden gap-1 text-sm sm:flex">
               <NavLink to="/">Simulator</NavLink>
               <NavLink to="/records">Records</NavLink>
+              <NavLink to="/family">Family</NavLink>
               <NavLink to="/chat">Chat</NavLink>
             </nav>
           </div>
@@ -41,7 +42,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
   );
 }
 
-function NavLink({ to, children }: { to: "/" | "/records" | "/chat"; children: ReactNode }) {
+function NavLink({ to, children }: { to: "/" | "/records" | "/family" | "/chat"; children: ReactNode }) {
   return (
     <Link
       to={to}
