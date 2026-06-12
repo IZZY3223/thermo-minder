@@ -706,20 +706,26 @@ function formatTime(t: number) {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function beep() {
+function alarm() {
   try {
     const Ctx = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
     const ctx = new Ctx();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.connect(g);
-    g.connect(ctx.destination);
-    o.frequency.value = 880;
-    g.gain.setValueAtTime(0.0001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-    o.start();
-    o.stop(ctx.currentTime + 0.4);
+    const now = ctx.currentTime;
+
+    for (let i = 0; i < 3; i++) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = "square";
+      o.frequency.value = 1200;
+      const t = now + i * 0.25;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.15, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      o.start(t);
+      o.stop(t + 0.15);
+    }
   } catch {
     /* noop */
   }
