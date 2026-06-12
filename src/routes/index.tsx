@@ -220,13 +220,14 @@ function ReminderScreen({
       f.pre = true;
       const msg = `${drink} is almost ready — 2 min left!`;
       toast(msg, { style: { background: "#92400e", color: "#fff" } });
+      alarm();
       setLogs((l) => [{ id: Date.now(), time: Date.now(), message: msg, tone: "amber" }, ...l]);
     }
     if (!f.ready && remainingSec === 0 && elapsedSec >= totalSeconds) {
       f.ready = true;
       const msg = `${drink} is at ${targetTemp}°C — perfect to drink now!`;
       toast.success(msg);
-      beep();
+      alarm();
       setLogs((l) => [{ id: Date.now(), time: Date.now(), message: msg, tone: "green" }, ...l]);
       postMessage({ author: myName, text: `${myName}'s ${drink} is ready at ${targetTemp}°C!`, mine: true, kind: "auto" });
     }
@@ -234,6 +235,7 @@ function ReminderScreen({
       f.late = true;
       const msg = `${drink} is cooling further — drink soon`;
       toast.error(msg);
+      alarm();
       setLogs((l) => [{ id: Date.now(), time: Date.now(), message: msg, tone: "red" }, ...l]);
     }
   }, [running, startedAt, remainingSec, pastTargetSec, elapsedSec, totalSeconds, drink, targetTemp, myName, postMessage]);
