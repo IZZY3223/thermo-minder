@@ -390,6 +390,7 @@ function TrackerScreen() {
       if (!f[m.k] && lost >= m.v) {
         f[m.k] = true;
         toast(m.msg);
+        alarm();
       }
     });
   }, [current, initial, room]);
