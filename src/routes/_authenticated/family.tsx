@@ -122,7 +122,9 @@ function FamilyPage() {
                       }`}
                     >
                       <div className="font-medium">{f.name}</div>
-                      <div className="text-xs text-slate-500">Code: {f.invite_code}</div>
+                      {f.created_by === userId && f.invite_code && (
+                        <div className="text-xs text-slate-500">Code: {f.invite_code}</div>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -196,6 +198,7 @@ function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const me = members.find((m) => m.user_id === userId);
@@ -240,6 +243,16 @@ function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
   }, [family.id]);
 
   useEffect(() => {
+    if (family.created_by !== userId) {
+      setInviteCode(null);
+      return;
+    }
+    supabase
+      .rpc("get_family_invite_code", { _family_id: family.id })
+      .then(({ data }) => setInviteCode((data as string | null) ?? null));
+  }, [family.id, family.created_by, userId]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
 
@@ -265,19 +278,25 @@ function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
         <div>
           <h2 className="font-semibold">{family.name}</h2>
           <p className="text-xs text-slate-400">
-            {members.length} member{members.length === 1 ? "" : "s"} · code{" "}
-            <span className="font-mono text-teal-300">{family.invite_code}</span>
+            {members.length} member{members.length === 1 ? "" : "s"}
+            {inviteCode && (
+              <>
+                {" "}· code <span className="font-mono text-teal-300">{inviteCode}</span>
+              </>
+            )}
           </p>
         </div>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(family.invite_code);
-            toast.success("Invite code copied");
-          }}
-          className="rounded-md border border-slate-700 px-2 py-1 text-xs hover:border-teal-400"
-        >
-          Copy code
-        </button>
+        {inviteCode && (
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(inviteCode);
+              toast.success("Invite code copied");
+            }}
+            className="rounded-md border border-slate-700 px-2 py-1 text-xs hover:border-teal-400"
+          >
+            Copy code
+          </button>
+        )}
       </header>
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
