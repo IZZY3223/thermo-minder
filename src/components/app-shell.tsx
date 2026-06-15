@@ -33,7 +33,11 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
               <ArrowLeft size={16} />
             </button>
             <Link to="/" className="flex items-center gap-2 text-teal-400">
-              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-teal-400" />
+              <img
+                src="/__l5e/assets-v1/96422966-c9e8-4a26-87d0-b7f3f3b977fc/thermominder.png"
+                alt="ThermoMinder"
+                className="h-7 w-7 rounded-md object-contain"
+              />
               <span className="text-xs font-semibold uppercase tracking-widest">ThermoTracker</span>
             </Link>
             <nav className="hidden gap-1 text-sm sm:flex">
