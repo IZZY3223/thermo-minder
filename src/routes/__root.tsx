@@ -17,6 +17,8 @@ if (typeof window !== "undefined") {
   installErrorCollector();
 }
 
+const LOGO_URL = "/__l5e/assets-v1/96422966-c9e8-4a26-87d0-b7f3f3b977fc/thermominder.png";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -90,12 +92,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { property: "og:image", content: LOGO_URL },
+      { name: "twitter:image", content: LOGO_URL },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", type: "image/png", href: LOGO_URL },
+      { rel: "apple-touch-icon", href: LOGO_URL },
     ],
   }),
   shellComponent: RootShell,
@@ -109,8 +115,27 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              #tt-splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;background:radial-gradient(circle at 50% 30%,#0f172a 0%,#020617 70%);color:#5eead4;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;transition:opacity .45s ease;}
+              #tt-splash.tt-hide{opacity:0;pointer-events:none;}
+              #tt-splash img{width:140px;height:140px;object-fit:contain;border-radius:24px;box-shadow:0 20px 60px -20px rgba(45,212,191,.5);animation:tt-pulse 1.8s ease-in-out infinite;}
+              #tt-splash .tt-title{font-size:1.1rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;}
+              #tt-splash .tt-bar{width:140px;height:3px;border-radius:999px;background:rgba(45,212,191,.15);overflow:hidden;position:relative;}
+              #tt-splash .tt-bar::after{content:"";position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,#2dd4bf,transparent);animation:tt-slide 1.2s linear infinite;}
+              @keyframes tt-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.85}}
+              @keyframes tt-slide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+            `,
+          }}
+        />
       </head>
       <body>
+        <div id="tt-splash" aria-hidden="true">
+          <img src={LOGO_URL} alt="" />
+          <div className="tt-title">ThermoMinder</div>
+          <div className="tt-bar" />
+        </div>
         {children}
         <Scripts />
       </body>
@@ -120,6 +145,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    const el = document.getElementById("tt-splash");
+    if (!el) return;
+    const t = setTimeout(() => {
+      el.classList.add("tt-hide");
+      setTimeout(() => el.remove(), 500);
+    }, 400);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

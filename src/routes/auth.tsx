@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import logoAsset from "@/assets/thermominder.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — ThermoTracker" }] }),
@@ -68,7 +69,14 @@ function AuthPage() {
         <Link to="/" className="text-xs uppercase tracking-widest text-teal-400">
           ← ThermoTracker
         </Link>
-        <h1 className="mt-2 text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create your account"}</h1>
+        <div className="mt-4 flex flex-col items-center text-center">
+          <img
+            src={logoAsset.url}
+            alt="ThermoMinder logo"
+            className="h-20 w-20 rounded-2xl object-contain shadow-lg shadow-teal-500/10"
+          />
+          <h1 className="mt-3 text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create your account"}</h1>
+        </div>
         <p className="mt-1 text-sm text-slate-400">Save brew records and chat with ThermoBot.</p>
 
         <button
