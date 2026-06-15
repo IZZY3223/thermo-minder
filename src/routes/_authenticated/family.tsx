@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated/family")({
   component: FamilyPage,
 });
 
-type Family = { id: string; name: string; invite_code: string; created_by: string };
+type Family = { id: string; name: string; created_by: string; invite_code?: string | null };
 type Member = { user_id: string; display_name: string };
 type Message = {
   id: string;
@@ -40,7 +40,7 @@ function FamilyPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("families")
-      .select("id, name, invite_code, created_by")
+      .select("id, name, created_by")
       .order("created_at", { ascending: true });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -61,17 +61,18 @@ function FamilyPage() {
     const { data: fam, error } = await supabase
       .from("families")
       .insert({ name, created_by: userId })
-      .select()
+      .select("id, name, created_by")
       .single();
     if (error || !fam) return toast.error(error?.message ?? "Failed");
     const { error: mErr } = await supabase
       .from("family_members")
       .insert({ family_id: fam.id, user_id: userId, display_name: dn });
     if (mErr) return toast.error(mErr.message);
+    const { data: code } = await supabase.rpc("get_family_invite_code", { _family_id: fam.id });
     setNewName("");
     setDisplayName("");
     setActiveId(fam.id);
-    toast.success(`Created “${fam.name}”. Invite code: ${fam.invite_code}`);
+    toast.success(`Created “${fam.name}”${code ? `. Invite code: ${code}` : ""}`);
     refresh();
   }
 
@@ -81,21 +82,15 @@ function FamilyPage() {
     const code = joinCode.trim().toUpperCase();
     const dn = joinName.trim();
     if (!code || !dn) return toast.error("Invite code and your display name are required");
-    const { data: fam, error } = await supabase
-      .from("families")
-      .select("id, name")
-      .eq("invite_code", code)
-      .maybeSingle();
-    if (error) return toast.error(error.message);
-    if (!fam) return toast.error("No family found for that code");
-    const { error: mErr } = await supabase
-      .from("family_members")
-      .insert({ family_id: fam.id, user_id: userId, display_name: dn });
-    if (mErr) return toast.error(mErr.message);
+    const { data: famId, error } = await supabase.rpc("join_family_by_code", {
+      _code: code,
+      _display_name: dn,
+    });
+    if (error || !famId) return toast.error(error?.message ?? "No family found for that code");
     setJoinCode("");
     setJoinName("");
-    setActiveId(fam.id);
-    toast.success(`Joined “${fam.name}”`);
+    setActiveId(famId as string);
+    toast.success("Joined family");
     refresh();
   }
 
@@ -127,7 +122,9 @@ function FamilyPage() {
                       }`}
                     >
                       <div className="font-medium">{f.name}</div>
-                      <div className="text-xs text-slate-500">Code: {f.invite_code}</div>
+                      {f.created_by === userId && f.invite_code && (
+                        <div className="text-xs text-slate-500">Code: {f.invite_code}</div>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -201,6 +198,7 @@ function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const me = members.find((m) => m.user_id === userId);
@@ -245,6 +243,16 @@ function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
   }, [family.id]);
 
   useEffect(() => {
+    if (family.created_by !== userId) {
+      setInviteCode(null);
+      return;
+    }
+    supabase
+      .rpc("get_family_invite_code", { _family_id: family.id })
+      .then(({ data }) => setInviteCode((data as string | null) ?? null));
+  }, [family.id, family.created_by, userId]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
 
@@ -270,19 +278,25 @@ function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
         <div>
           <h2 className="font-semibold">{family.name}</h2>
           <p className="text-xs text-slate-400">
-            {members.length} member{members.length === 1 ? "" : "s"} · code{" "}
-            <span className="font-mono text-teal-300">{family.invite_code}</span>
+            {members.length} member{members.length === 1 ? "" : "s"}
+            {inviteCode && (
+              <>
+                {" "}· code <span className="font-mono text-teal-300">{inviteCode}</span>
+              </>
+            )}
           </p>
         </div>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(family.invite_code);
-            toast.success("Invite code copied");
-          }}
-          className="rounded-md border border-slate-700 px-2 py-1 text-xs hover:border-teal-400"
-        >
-          Copy code
-        </button>
+        {inviteCode && (
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(inviteCode);
+              toast.success("Invite code copied");
+            }}
+            className="rounded-md border border-slate-700 px-2 py-1 text-xs hover:border-teal-400"
+          >
+            Copy code
+          </button>
+        )}
       </header>
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
