@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated/family")({
   component: FamilyPage,
 });
 
-type Family = { id: string; name: string; invite_code: string; created_by: string };
+type Family = { id: string; name: string; created_by: string; invite_code?: string | null };
 type Member = { user_id: string; display_name: string };
 type Message = {
   id: string;
@@ -40,7 +40,7 @@ function FamilyPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("families")
-      .select("id, name, invite_code, created_by")
+      .select("id, name, created_by")
       .order("created_at", { ascending: true });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -61,17 +61,18 @@ function FamilyPage() {
     const { data: fam, error } = await supabase
       .from("families")
       .insert({ name, created_by: userId })
-      .select()
+      .select("id, name, created_by")
       .single();
     if (error || !fam) return toast.error(error?.message ?? "Failed");
     const { error: mErr } = await supabase
       .from("family_members")
       .insert({ family_id: fam.id, user_id: userId, display_name: dn });
     if (mErr) return toast.error(mErr.message);
+    const { data: code } = await supabase.rpc("get_family_invite_code", { _family_id: fam.id });
     setNewName("");
     setDisplayName("");
     setActiveId(fam.id);
-    toast.success(`Created “${fam.name}”. Invite code: ${fam.invite_code}`);
+    toast.success(`Created “${fam.name}”${code ? `. Invite code: ${code}` : ""}`);
     refresh();
   }
 
@@ -81,21 +82,15 @@ function FamilyPage() {
     const code = joinCode.trim().toUpperCase();
     const dn = joinName.trim();
     if (!code || !dn) return toast.error("Invite code and your display name are required");
-    const { data: fam, error } = await supabase
-      .from("families")
-      .select("id, name")
-      .eq("invite_code", code)
-      .maybeSingle();
-    if (error) return toast.error(error.message);
-    if (!fam) return toast.error("No family found for that code");
-    const { error: mErr } = await supabase
-      .from("family_members")
-      .insert({ family_id: fam.id, user_id: userId, display_name: dn });
-    if (mErr) return toast.error(mErr.message);
+    const { data: famId, error } = await supabase.rpc("join_family_by_code", {
+      _code: code,
+      _display_name: dn,
+    });
+    if (error || !famId) return toast.error(error?.message ?? "No family found for that code");
     setJoinCode("");
     setJoinName("");
-    setActiveId(fam.id);
-    toast.success(`Joined “${fam.name}”`);
+    setActiveId(famId as string);
+    toast.success("Joined family");
     refresh();
   }
 
