@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import logoAsset from "@/assets/thermominder.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
@@ -10,11 +9,15 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const PHONE_RE = /^[0-9]{7,15}$/;
+const PIN_RE = /^[0-9]{5}$/;
+const phoneToEmail = (phone: string) => `${phone}@thermominder.app`;
+const pinToPassword = (pin: string) => `tm-pin-${pin}`;
+
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("0798937387");
+  const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,41 +26,40 @@ function AuthPage() {
     });
   }, [navigate]);
 
-  async function onEmail(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (!PHONE_RE.test(cleanPhone)) {
+      toast.error("Enter a valid phone number");
+      return;
+    }
+    if (!PIN_RE.test(pin)) {
+      toast.error("PIN must be exactly 5 digits");
+      return;
+    }
     setLoading(true);
+    const email = phoneToEmail(cleanPhone);
+    const password = pinToPassword(pin);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Account created. Check your email to confirm.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        navigate({ to: "/records" });
+      let { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        // Auto-create the account on first sign-in for this phone
+        const msg = error.message.toLowerCase();
+        if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("not found")) {
+          const signUp = await supabase.auth.signUp({ email, password });
+          if (signUp.error) throw signUp.error;
+          if (!signUp.data.session) {
+            const retry = await supabase.auth.signInWithPassword({ email, password });
+            if (retry.error) throw retry.error;
+          }
+        } else {
+          throw error;
+        }
       }
+      navigate({ to: "/records" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setLoading(false);
-    }
-  }
-
-  async function onGoogle() {
-    setLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/auth",
-      });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      navigate({ to: "/records" });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);
     }
   }
@@ -75,55 +77,45 @@ function AuthPage() {
             alt="ThermoMinder logo"
             className="h-20 w-20 rounded-2xl object-contain shadow-lg shadow-teal-500/10"
           />
-          <h1 className="mt-3 text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create your account"}</h1>
+          <h1 className="mt-3 text-2xl font-bold">Sign in</h1>
         </div>
-        <p className="mt-1 text-sm text-slate-400">Save brew records and chat with ThermoBot.</p>
+        <p className="mt-1 text-center text-sm text-slate-400">Use your phone number and 5-digit PIN.</p>
 
-        <button
-          onClick={onGoogle}
-          disabled={loading}
-          className="mt-5 w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm font-medium hover:border-teal-400 disabled:opacity-50"
-        >
-          Continue with Google
-        </button>
-
-        <div className="my-4 flex items-center gap-2 text-xs text-slate-500">
-          <div className="h-px flex-1 bg-slate-800" /> or <div className="h-px flex-1 bg-slate-800" />
-        </div>
-
-        <form onSubmit={onEmail} className="space-y-3">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm"
-          />
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm"
-          />
+        <form onSubmit={onSubmit} className="mt-5 space-y-3">
+          <label className="block">
+            <span className="mb-1 block text-xs text-slate-400">Phone number</span>
+            <input
+              type="tel"
+              required
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="0798937387"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm tracking-wider"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs text-slate-400">5-digit PIN</span>
+            <input
+              type="password"
+              required
+              inputMode="numeric"
+              pattern="[0-9]{5}"
+              maxLength={5}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              placeholder="•••••"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-center text-lg tracking-[0.6em]"
+            />
+          </label>
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-teal-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400 disabled:opacity-50"
           >
-            {mode === "signin" ? "Sign in" : "Sign up"}
+            {loading ? "Signing in…" : "Continue"}
           </button>
         </form>
-
-        <button
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="mt-3 w-full text-xs text-slate-400 hover:text-teal-300"
-        >
-          {mode === "signin" ? "No account? Sign up" : "Have an account? Sign in"}
-        </button>
       </div>
     </div>
   );
