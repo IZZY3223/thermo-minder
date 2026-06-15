@@ -17,6 +17,8 @@ if (typeof window !== "undefined") {
   installErrorCollector();
 }
 
+const LOGO_URL = "/__l5e/assets-v1/96422966-c9e8-4a26-87d0-b7f3f3b977fc/thermominder.png";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -90,12 +92,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { property: "og:image", content: LOGO_URL },
+      { name: "twitter:image", content: LOGO_URL },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", type: "image/png", href: LOGO_URL },
+      { rel: "apple-touch-icon", href: LOGO_URL },
     ],
   }),
   shellComponent: RootShell,
