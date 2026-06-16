@@ -200,7 +200,21 @@ function FamilyPage() {
 function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
-  return <FamilyRoomInner family={family} userId={userId} _members={members} _messages={messages} _setMessages={setMessages} _setMembers={setMembers} />;
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  return (
+    <FamilyRoomView
+      family={family} userId={userId}
+      messages={messages} setMessages={setMessages}
+      members={members} setMembers={setMembers}
+      text={text} setText={setText}
+      sending={sending} setSending={setSending}
+      inviteCode={inviteCode} setInviteCode={setInviteCode}
+      scrollRef={scrollRef}
+    />
+  );
 }
 
 function AddMemberSection({ familyId, onAdded }: { familyId: string; onAdded: () => void }) {
@@ -260,17 +274,20 @@ function AddMemberSection({ familyId, onAdded }: { familyId: string; onAdded: ()
   );
 }
 
-function FamilyRoomInner({ family, userId, _messages, _setMessages, _members, _setMembers }: {
+type FamilyRoomViewProps = {
   family: Family; userId: string;
-  _messages: Message[]; _setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
-  _members: Member[]; _setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
-}) {
-  const messages = _messages; const setMessages = _setMessages;
-  const members = _members; const setMembers = _setMembers;
-  const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  messages: Message[]; setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  members: Member[]; setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+  text: string; setText: React.Dispatch<React.SetStateAction<string>>;
+  sending: boolean; setSending: React.Dispatch<React.SetStateAction<boolean>>;
+  inviteCode: string | null; setInviteCode: React.Dispatch<React.SetStateAction<string | null>>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+};
+
+function FamilyRoomView({
+  family, userId, messages, setMessages, members, setMembers,
+  text, setText, sending, setSending, inviteCode, setInviteCode, scrollRef,
+}: FamilyRoomViewProps) {
 
   const me = members.find((m) => m.user_id === userId);
 
