@@ -40,16 +40,26 @@ function AuthPage() {
       toast.error("PIN must be exactly 5 digits");
       return;
     }
-    if (mode === "signup" && pin !== confirmPin) {
-      toast.error("PINs do not match");
-      return;
+    if (mode === "signup") {
+      if (pin !== confirmPin) {
+        toast.error("PINs do not match");
+        return;
+      }
+      if (!name.trim()) {
+        toast.error("Please enter your name");
+        return;
+      }
     }
     setLoading(true);
     const email = phoneToEmail(cleanPhone);
     const password = pinToPassword(pin);
     try {
       if (mode === "signup") {
-        const signUp = await supabase.auth.signUp({ email, password });
+        const signUp = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name: name.trim() } },
+        });
         if (signUp.error) {
           const m = signUp.error.message.toLowerCase();
           if (m.includes("registered") || m.includes("exists")) {
