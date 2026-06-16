@@ -205,6 +205,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_family_member_by_phone: {
+        Args: { _display_name: string; _family_id: string; _phone: string }
+        Returns: string
+      }
       get_family_invite_code: { Args: { _family_id: string }; Returns: string }
       is_family_member: {
         Args: { _family: string; _user: string }
