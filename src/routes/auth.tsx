@@ -17,6 +17,7 @@ const pinToPassword = (pin: string) => `tm-pin-${pin}`;
 function AuthPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("0798937387");
+  const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -39,16 +40,26 @@ function AuthPage() {
       toast.error("PIN must be exactly 5 digits");
       return;
     }
-    if (mode === "signup" && pin !== confirmPin) {
-      toast.error("PINs do not match");
-      return;
+    if (mode === "signup") {
+      if (pin !== confirmPin) {
+        toast.error("PINs do not match");
+        return;
+      }
+      if (!name.trim()) {
+        toast.error("Please enter your name");
+        return;
+      }
     }
     setLoading(true);
     const email = phoneToEmail(cleanPhone);
     const password = pinToPassword(pin);
     try {
       if (mode === "signup") {
-        const signUp = await supabase.auth.signUp({ email, password });
+        const signUp = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name: name.trim() } },
+        });
         if (signUp.error) {
           const m = signUp.error.message.toLowerCase();
           if (m.includes("registered") || m.includes("exists")) {
@@ -101,7 +112,7 @@ function AuthPage() {
         </div>
         <p className="mt-1 text-center text-sm text-slate-400">
           {mode === "signup"
-            ? "Choose a phone number and a 5-digit PIN."
+            ? "Enter your name, phone number, and a 5-digit PIN."
             : "Use your phone number and 5-digit PIN."}
         </p>
 
@@ -139,6 +150,19 @@ function AuthPage() {
               className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm tracking-wider"
             />
           </label>
+          {mode === "signup" && (
+            <label className="block">
+              <span className="mb-1 block text-xs text-slate-400">Name</span>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm"
+              />
+            </label>
+          )}
           <label className="block">
             <span className="mb-1 block text-xs text-slate-400">5-digit PIN</span>
             <input
