@@ -112,7 +112,7 @@ function AuthPage() {
         </div>
         <p className="mt-1 text-center text-sm text-slate-400">
           {mode === "signup"
-            ? "Choose a phone number and a 5-digit PIN."
+            ? "Enter your name, phone number, and a 5-digit PIN."
             : "Use your phone number and 5-digit PIN."}
         </p>
 
