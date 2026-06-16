@@ -177,6 +177,10 @@ function FamilyPage() {
               </button>
             </form>
           </section>
+
+          {active && active.created_by === userId && (
+            <AddMemberSection familyId={active.id} onAdded={() => setActiveId(active.id)} />
+          )}
         </aside>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60">
