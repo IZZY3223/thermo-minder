@@ -177,6 +177,10 @@ function FamilyPage() {
               </button>
             </form>
           </section>
+
+          {active && active.created_by === userId && (
+            <AddMemberSection familyId={active.id} onAdded={() => setActiveId(active.id)} />
+          )}
         </aside>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60">
@@ -200,6 +204,90 @@ function FamilyRoom({ family, userId }: { family: Family; userId: string }) {
   const [sending, setSending] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  return (
+    <FamilyRoomView
+      family={family} userId={userId}
+      messages={messages} setMessages={setMessages}
+      members={members} setMembers={setMembers}
+      text={text} setText={setText}
+      sending={sending} setSending={setSending}
+      inviteCode={inviteCode} setInviteCode={setInviteCode}
+      scrollRef={scrollRef}
+    />
+  );
+}
+
+function AddMemberSection({ familyId, onAdded }: { familyId: string; onAdded: () => void }) {
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length < 7) return toast.error("Enter a valid phone number");
+    if (!name.trim()) return toast.error("Enter the member's name");
+    setBusy(true);
+    const { error } = await supabase.rpc("add_family_member_by_phone", {
+      _family_id: familyId,
+      _phone: cleanPhone,
+      _display_name: name.trim(),
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${name.trim()} added to the family`);
+    setPhone("");
+    setName("");
+    onAdded();
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-teal-300">
+        Add member
+      </h2>
+      <p className="mb-2 text-xs text-slate-400">
+        Add anyone with an account by their phone number — no invite code needed.
+      </p>
+      <form onSubmit={submit} className="space-y-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Member's name"
+          className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm"
+        />
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Member's phone number"
+          inputMode="tel"
+          className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm tracking-wider"
+        />
+        <button
+          disabled={busy}
+          className="w-full rounded-lg bg-teal-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400 disabled:opacity-50"
+        >
+          {busy ? "Adding…" : "Add to family"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+type FamilyRoomViewProps = {
+  family: Family; userId: string;
+  messages: Message[]; setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  members: Member[]; setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+  text: string; setText: React.Dispatch<React.SetStateAction<string>>;
+  sending: boolean; setSending: React.Dispatch<React.SetStateAction<boolean>>;
+  inviteCode: string | null; setInviteCode: React.Dispatch<React.SetStateAction<string | null>>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+};
+
+function FamilyRoomView({
+  family, userId, messages, setMessages, members, setMembers,
+  text, setText, sending, setSending, inviteCode, setInviteCode, scrollRef,
+}: FamilyRoomViewProps) {
 
   const me = members.find((m) => m.user_id === userId);
 
