@@ -17,6 +17,7 @@ const pinToPassword = (pin: string) => `tm-pin-${pin}`;
 function AuthPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("0798937387");
+  const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
