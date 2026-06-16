@@ -18,6 +18,8 @@ function AuthPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("0798937387");
   const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -37,26 +39,44 @@ function AuthPage() {
       toast.error("PIN must be exactly 5 digits");
       return;
     }
+    if (mode === "signup" && pin !== confirmPin) {
+      toast.error("PINs do not match");
+      return;
+    }
     setLoading(true);
     const email = phoneToEmail(cleanPhone);
     const password = pinToPassword(pin);
     try {
-      let { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        // Auto-create the account on first sign-in for this phone
-        const msg = error.message.toLowerCase();
-        if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("not found")) {
-          const signUp = await supabase.auth.signUp({ email, password });
-          if (signUp.error) throw signUp.error;
-          if (!signUp.data.session) {
-            const retry = await supabase.auth.signInWithPassword({ email, password });
-            if (retry.error) throw retry.error;
+      if (mode === "signup") {
+        const signUp = await supabase.auth.signUp({ email, password });
+        if (signUp.error) {
+          const m = signUp.error.message.toLowerCase();
+          if (m.includes("registered") || m.includes("exists")) {
+            toast.error("Account already exists. Please sign in instead.");
+            setMode("signin");
+            return;
           }
-        } else {
+          throw signUp.error;
+        }
+        if (!signUp.data.session) {
+          const retry = await supabase.auth.signInWithPassword({ email, password });
+          if (retry.error) throw retry.error;
+        }
+        toast.success("Account created");
+        navigate({ to: "/records" });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          const m = error.message.toLowerCase();
+          if (m.includes("invalid") || m.includes("credentials") || m.includes("not found")) {
+            toast.error("No account found. Please create one first.");
+            setMode("signup");
+            return;
+          }
           throw error;
         }
+        navigate({ to: "/records" });
       }
-      navigate({ to: "/records" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -77,9 +97,34 @@ function AuthPage() {
             alt="ThermoMinder logo"
             className="h-20 w-20 rounded-2xl object-contain shadow-lg shadow-teal-500/10"
           />
-          <h1 className="mt-3 text-2xl font-bold">Sign in</h1>
+          <h1 className="mt-3 text-2xl font-bold">{mode === "signup" ? "Create account" : "Sign in"}</h1>
         </div>
-        <p className="mt-1 text-center text-sm text-slate-400">Use your phone number and 5-digit PIN.</p>
+        <p className="mt-1 text-center text-sm text-slate-400">
+          {mode === "signup"
+            ? "Choose a phone number and a 5-digit PIN."
+            : "Use your phone number and 5-digit PIN."}
+        </p>
+
+        <div className="mt-4 grid grid-cols-2 rounded-lg border border-slate-700 bg-slate-950/40 p-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setMode("signin")}
+            className={`rounded-md px-3 py-1.5 font-medium transition ${
+              mode === "signin" ? "bg-teal-500 text-slate-950" : "text-slate-300"
+            }`}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className={`rounded-md px-3 py-1.5 font-medium transition ${
+              mode === "signup" ? "bg-teal-500 text-slate-950" : "text-slate-300"
+            }`}
+          >
+            Create account
+          </button>
+        </div>
 
         <form onSubmit={onSubmit} className="mt-5 space-y-3">
           <label className="block">
@@ -108,12 +153,28 @@ function AuthPage() {
               className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-center text-lg tracking-[0.6em]"
             />
           </label>
+          {mode === "signup" && (
+            <label className="block">
+              <span className="mb-1 block text-xs text-slate-400">Confirm PIN</span>
+              <input
+                type="password"
+                required
+                inputMode="numeric"
+                pattern="[0-9]{5}"
+                maxLength={5}
+                value={confirmPin}
+                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                placeholder="•••••"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-center text-lg tracking-[0.6em]"
+              />
+            </label>
+          )}
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-teal-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400 disabled:opacity-50"
           >
-            {loading ? "Signing in…" : "Continue"}
+            {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
           </button>
         </form>
       </div>
